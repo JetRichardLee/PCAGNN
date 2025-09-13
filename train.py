@@ -28,7 +28,7 @@ train_args = {
         "eval_enabled" : True
     }
 
-All_N = ["computers","photo","Cora-ML","PubMed", "CiteSeer","Airports","club","Wiki"]
+All_N = ["computers","photo","Cora","PubMed", "CiteSeer","Airports","club","Wiki"]
 All_G = ["DD","AIDS", "ENZYMES","Mutagenicity", "PROTEINS","IMDB-BINARY","COLLAB","REDDIT-BINARY"]
 #Mutagenicity
 align_size = 1024
@@ -466,5 +466,6 @@ with torch.no_grad():
         val_acc = evaluate(out[valM_G[d]], Ys_G[d][valM_G[d]])
         test_acc = evaluate(out[testM_G[d]], Ys_G[d][testM_G[d]])
         print(f"---{Test_G[d]:<15} Train acc:{train_acc:.4f} Val acc:{val_acc:.4f} Test acc:{test_acc:.4f}")
+
 
 
