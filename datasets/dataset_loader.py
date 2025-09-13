@@ -42,7 +42,7 @@ def matri_to_index_directed(A):
 
 
 def load_node_data(name,train_frac=0.5,val_frac=0.2,test_frac=0.3,directed=False):
-    if name == "CiteSeer" or name == "PubMed":
+    if name == "CiteSeer" or name == "PubMed" or name== "Cora":
         dataset = Planetoid(root='./datasets/' + name + '/', name=name,num_train_per_class=50)
         #_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         _device = torch.device('cpu')
@@ -182,4 +182,5 @@ def load_graph_data(name,train_frac=0.5,val_frac=0.2,test_frac=None,directed=Fal
         val_mask[val_idx] = True
         test_mask[test_idx] = True
     return graphs, num_node_features, num_classes,[train_mask,val_mask,test_mask],ys
+
 
