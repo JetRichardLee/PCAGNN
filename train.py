@@ -13,7 +13,7 @@ from utils import store_checkpoint_test, load_best_model_test,load_best_model_co
 
 paper = "GCN"
 
-exp_id = 1
+exp_id = 2
 
 device =  "cuda" if torch.cuda.is_available() else "cpu"
 #device =  "cpu"
@@ -466,6 +466,7 @@ with torch.no_grad():
         val_acc = evaluate(out[valM_G[d]], Ys_G[d][valM_G[d]])
         test_acc = evaluate(out[testM_G[d]], Ys_G[d][testM_G[d]])
         print(f"---{Test_G[d]:<15} Train acc:{train_acc:.4f} Val acc:{val_acc:.4f} Test acc:{test_acc:.4f}")
+
 
 
 
