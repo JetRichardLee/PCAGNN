@@ -9,7 +9,7 @@ import random
 import time 
 from align import byte_align,repeat_align,PCA_align_N,PCA_align_G
 from utils import evaluate, store_checkpoint, load_best_model, train_model
-from utils import store_checkpoint_test, load_best_model_test,load_best_model_core
+from utils import store_checkpoint_test, load_best_model_test,load_best_model_core,store_checkpoint_down
 
 paper = "GCN"
 
@@ -44,7 +44,7 @@ Test_G = [All_G[exp_id*2],All_G[exp_id*2+1]]
 Train_G =  list(set(All_G)-set(Test_G))
 
 print("ID:{},testing {}".format(exp_id,Test_N+Test_G))
-#"""
+"""
 Xs_N = []
 Es_N = []
 Ys_N = []
@@ -323,9 +323,11 @@ g_optimizers = [ torch.optim.Adam(glinear.parameters(), lr=0.001) for glinear in
 
 criterion = torch.nn.CrossEntropyLoss()
 
-best_val_acc = 0.0
-best_train_acc = 0.0
-best_epoch = 0
+best_N_val_acc = [0.0 for _ in range(len(Test_N))]
+best_G_val_acc = [0.0 for _ in range(len(Test_G))]
+best_N_train_acc = [0.0 for _ in range(len(Test_N))]
+best_G_train_acc = [0.0 for _ in range(len(Test_G))]
+#best_epoch = 0
 
 embedding_N = []
 embedding_G = []
@@ -394,6 +396,15 @@ for epoch in range(0, 5000):
             val_acc = evaluate(out[valM_N[d]], Ys_N[d][valM_N[d]])
             test_acc = evaluate(out[testM_N[d]], Ys_N[d][testM_N[d]])
             print(f"---{Test_N[d]:<15} Train acc:{train_acc:.4f} Val acc:{val_acc:.4f} Test acc:{test_acc:.4f}")
+            if val_acc == best_N_val_acc[d] and train_acc>best_N_train_acc[d]: # New best results
+                print("Train improved")
+                best_N_train_acc[d] = train_acc
+                store_checkpoint_test("checkpoint/PCGNN", "/{}".format(exp_id),Down_N[d],Test_N[d])
+            if val_acc > best_N_val_acc[d]: # New best results
+                print("Val improved")
+                best_N_val_acc[d] = val_acc
+                best_N_train_acc[d] = train_acc
+                store_checkpoint_test("checkpoint/PCGNN", "/{}".format(exp_id),Down_N[d],Test_N[d])
 
             sum_train_acc += train_acc
             sum_test_acc += test_acc
@@ -415,29 +426,26 @@ for epoch in range(0, 5000):
             val_acc = evaluate(out[valM_G[d]], Ys_G[d][valM_G[d]])
             test_acc = evaluate(out[testM_G[d]], Ys_G[d][testM_G[d]])
             print(f"---{Test_G[d]:<15} Train acc:{train_acc:.4f} Val acc:{val_acc:.4f} Test acc:{test_acc:.4f}")
+            if val_acc == best_G_val_acc[d] and train_acc>best_G_train_acc[d]: # New best results
+                print("Train improved")
+                best_G_train_acc[d] = train_acc
+                store_checkpoint_test("checkpoint/PCGNN", "/{}".format(exp_id),Down_G[d],Test_G[d])
+            if val_acc > best_G_val_acc[d]: # New best results
+                print("Val improved")
+                best_G_val_acc[d] = val_acc
+                best_G_train_acc[d] = train_acc
+                store_checkpoint_test("checkpoint/PCGNN", "/{}".format(exp_id),Down_G[d],Test_G[d])
 
             sum_train_acc += train_acc
             sum_test_acc += test_acc
             sum_val_acc += val_acc
             
     print(f"Epoch: {epoch}, train_acc: {sum_train_acc/4:.4f}, val_acc: {sum_val_acc/4:.4f}, train_loss: {loss.item():.4f}")
-    if sum_val_acc == best_val_acc and sum_train_acc>best_train_acc: # New best results
-        print("Train improved")
-        best_train_acc = sum_train_acc
-        best_epoch = epoch
-        store_checkpoint_test("checkpoint/PCGNN", "/{}".format(exp_id),Down_N,Down_G)
-
-    if sum_val_acc > best_val_acc: # New best results
-        print("Val improved")
-        best_val_acc = sum_val_acc
-        best_train_acc = sum_train_acc
-        best_epoch = epoch
-        store_checkpoint_test("checkpoint/PCGNN", "/{}".format(exp_id),Down_N,Down_G)
-        
+    
     #if epoch - best_epoch > train_args["early_stopping"] and best_val_acc > 0.99:
     #    break
 
-Down_N, Down_G = load_best_model_test("checkpoint/PCGNN", "/{}".format(exp_id), Down_N, Down_G, True)
+Down_N, Down_G = load_best_model_test("checkpoint/PCGNN", "/{}".format(exp_id), Down_N, Down_G,Test_N,Test_G, True)
 with torch.no_grad():
     Core_model.eval()
     for d in range(len(Test_N)):
@@ -466,8 +474,3 @@ with torch.no_grad():
         val_acc = evaluate(out[valM_G[d]], Ys_G[d][valM_G[d]])
         test_acc = evaluate(out[testM_G[d]], Ys_G[d][testM_G[d]])
         print(f"---{Test_G[d]:<15} Train acc:{train_acc:.4f} Val acc:{val_acc:.4f} Test acc:{test_acc:.4f}")
-
-
-
-
-
