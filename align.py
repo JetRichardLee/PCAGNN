@@ -15,8 +15,8 @@ import random
 import time 
 import copy 
 
-device =  "cuda:7" if torch.cuda.is_available() else "cpu"
-#device =  "cuda" if torch.cuda.is_available() else "cpu"
+#device =  "cuda:7" if torch.cuda.is_available() else "cpu"
+device =  "cuda" if torch.cuda.is_available() else "cpu"
 #device =  "cpu"
 def byte_align(o_x,D):
     
@@ -112,4 +112,5 @@ def PCA_align_G(graphs,D,sample=None,Norm=True):
         xg = torch.nn.functional.normalize(xg, p=2, dim=1)
         n_x.append(torch.matmul(xg,PCA_U).to(device))
     return n_x
+
 
