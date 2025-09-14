@@ -399,12 +399,12 @@ for epoch in range(0, 5000):
             if val_acc == best_N_val_acc[d] and train_acc>best_N_train_acc[d]: # New best results
                 print("Train improved")
                 best_N_train_acc[d] = train_acc
-                store_checkpoint_test("checkpoint/PCGNN", "/{}".format(exp_id),Down_N[d],Test_N[d])
+                store_checkpoint_down("checkpoint/PCGNN", "/{}".format(exp_id),Down_N[d],Test_N[d])
             if val_acc > best_N_val_acc[d]: # New best results
                 print("Val improved")
                 best_N_val_acc[d] = val_acc
                 best_N_train_acc[d] = train_acc
-                store_checkpoint_test("checkpoint/PCGNN", "/{}".format(exp_id),Down_N[d],Test_N[d])
+                store_checkpoint_down("checkpoint/PCGNN", "/{}".format(exp_id),Down_N[d],Test_N[d])
 
             sum_train_acc += train_acc
             sum_test_acc += test_acc
@@ -429,12 +429,12 @@ for epoch in range(0, 5000):
             if val_acc == best_G_val_acc[d] and train_acc>best_G_train_acc[d]: # New best results
                 print("Train improved")
                 best_G_train_acc[d] = train_acc
-                store_checkpoint_test("checkpoint/PCGNN", "/{}".format(exp_id),Down_G[d],Test_G[d])
+                store_checkpoint_down("checkpoint/PCGNN", "/{}".format(exp_id),Down_G[d],Test_G[d])
             if val_acc > best_G_val_acc[d]: # New best results
                 print("Val improved")
                 best_G_val_acc[d] = val_acc
                 best_G_train_acc[d] = train_acc
-                store_checkpoint_test("checkpoint/PCGNN", "/{}".format(exp_id),Down_G[d],Test_G[d])
+                store_checkpoint_down("checkpoint/PCGNN", "/{}".format(exp_id),Down_G[d],Test_G[d])
 
             sum_train_acc += train_acc
             sum_test_acc += test_acc
@@ -474,3 +474,4 @@ with torch.no_grad():
         val_acc = evaluate(out[valM_G[d]], Ys_G[d][valM_G[d]])
         test_acc = evaluate(out[testM_G[d]], Ys_G[d][testM_G[d]])
         print(f"---{Test_G[d]:<15} Train acc:{train_acc:.4f} Val acc:{val_acc:.4f} Test acc:{test_acc:.4f}")
+
