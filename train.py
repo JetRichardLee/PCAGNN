@@ -44,7 +44,7 @@ Test_G = [All_G[exp_id*2],All_G[exp_id*2+1]]
 Train_G =  list(set(All_G)-set(Test_G))
 
 print("ID:{},testing {}".format(exp_id,Test_N+Test_G))
-"""
+#"""
 Xs_N = []
 Es_N = []
 Ys_N = []
@@ -474,5 +474,6 @@ with torch.no_grad():
         val_acc = evaluate(out[valM_G[d]], Ys_G[d][valM_G[d]])
         test_acc = evaluate(out[testM_G[d]], Ys_G[d][testM_G[d]])
         print(f"---{Test_G[d]:<15} Train acc:{train_acc:.4f} Val acc:{val_acc:.4f} Test acc:{test_acc:.4f}")
+
 
 
