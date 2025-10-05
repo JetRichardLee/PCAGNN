@@ -1,7 +1,4 @@
 # -*- coding: utf-8 -*-
-
-from gnn import Mini_GFM, Node_linear,Graph_linear
-
 import torch 
 import numpy as np
 import os 
@@ -91,4 +88,5 @@ def PCA_align_G(graphs,D,sample=None,Norm=True):
         xg = torch.nn.functional.normalize(xg, p=2, dim=1)
         n_x.append(torch.matmul(xg,PCA_U).to(device))
     return n_x
+
 
