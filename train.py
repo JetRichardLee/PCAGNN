@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from gnn import Fo_GCN, Node_linear,Graph_linear,NodeGCN,NodeGAT,NodeGSAGE
+from gnn import MiniGFM, Node_linear,Graph_linear
 from datasets.dataset_loader import load_node_data, load_graph_data
 
 import torch 
@@ -11,10 +11,9 @@ from align import byte_align,repeat_align,PCA_align_N,PCA_align_G
 from utils import evaluate, store_checkpoint, load_best_model, train_model
 from utils import store_checkpoint_test, load_best_model_test,load_best_model_core,store_checkpoint_down
 
-paper = "GCN"
 
 exp_id = 2
-#device =  "cuda:7" if torch.cuda.is_available() else "cpu"
+#device =  "cuda:3" if torch.cuda.is_available() else "cpu"
 device =  "cuda" if torch.cuda.is_available() else "cpu"
 #device =  "cpu"
     
@@ -30,11 +29,11 @@ train_args = {
 
 All_N = ["computers","photo","Cora","PubMed", "CiteSeer","Airports","club","Wiki"]
 All_G = ["DD","AIDS", "ENZYMES","Mutagenicity", "PROTEINS","IMDB-BINARY","COLLAB","REDDIT-BINARY"]
-#Mutagenicity
+
 align_size = 1024
 hidden_size = 512
 
-Core_model = Fo_GCN(align_size,hidden_size).to(device)
+Core_model = MiniGFM(align_size,hidden_size).to(device)
 
 
 Test_N = [All_N[exp_id*2],All_N[exp_id*2+1]]
@@ -71,9 +70,6 @@ for i in range(len(Train_N)):
     
     Down_N.append(Node_linear(num_labels,hidden_size).to(device))
 
-#print(Xs_N[0].shape)
-#print(Xs_N[1].shape)
-#print(Xs_N[2].shape)
 Xs_G = []
 all_graphs = []
 Ys_G = []
@@ -99,14 +95,6 @@ for i in range(len(Train_G)):
     testM_G.append(test_mask)
     numY_G.append(num_labels)
     Down_G.append(Graph_linear(num_labels,hidden_size).to(device))
-  
-#print(Xs_G[0][0].shape)
-#print(Xs_G[1][0].shape)
-#print(Xs_G[2][0].shape)  
-
-#Core_model = load_best_model_core("checkpoint/PCGNN", "/{}".format(exp_id), Core_model, True)
-
-all_parameters = [{"params":nlinear.parameters() for nlinear in Down_N}] + [{"params":glinear.parameters() for glinear in Down_G}] + [{"params":Core_model.parameters()}]
 
 n_optimizers = [ torch.optim.Adam(nlinear.parameters(), lr=0.001) for nlinear in Down_N]
 g_optimizers = [ torch.optim.Adam(glinear.parameters(), lr=0.001) for glinear in Down_G]
@@ -120,11 +108,9 @@ best_epoch = 0
             
 for epoch in range(0, 1000):
     for d in range(len(Train_N)):
-    #torch.nn.utils.clip_grad_norm_(all_parameters, max_norm=train_args["clip_max"])
         n_optimizers[d].zero_grad()
         
     for d in range(len(Train_G)):
-    #torch.nn.utils.clip_grad_norm_(all_parameters, max_norm=train_args["clip_max"])
         g_optimizers[d].zero_grad()
         
     c_optimizer.zero_grad()
@@ -158,11 +144,9 @@ for epoch in range(0, 1000):
     loss.backward()
     
     for d in range(len(Train_N)):
-    #torch.nn.utils.clip_grad_norm_(all_parameters, max_norm=train_args["clip_max"])
         n_optimizers[d].step()
         
     for d in range(len(Train_G)):
-    #torch.nn.utils.clip_grad_norm_(all_parameters, max_norm=train_args["clip_max"])
         g_optimizers[d].step()
         
     c_optimizer.step()
@@ -190,7 +174,6 @@ for epoch in range(0, 1000):
             now_graphs = all_graphs[d]
             
             train_idx = np.array([i for i in range(len(now_graphs))])
-            #train_idx = train_idx[trainM_G[d]]
             
             out = torch.zeros((len(now_graphs),numY_G[d])).to(device)
             for i in train_idx:
@@ -207,23 +190,20 @@ for epoch in range(0, 1000):
             sum_val_acc += val_acc
             
     print(f"Epoch: {epoch}, train_acc: {sum_train_acc/14:.4f}, val_acc: {sum_val_acc/14:.4f}, train_loss: {loss.item():.4f}")
-    if sum_val_acc == best_val_acc and sum_train_acc>best_train_acc: # New best results
+    if sum_val_acc == best_val_acc and sum_train_acc>best_train_acc: 
         print("Train improved")
         best_train_acc = sum_train_acc
         best_epoch = epoch
-        store_checkpoint("checkpoint/PCGNN", "/{}".format(exp_id),Down_N,Down_G,Core_model)
+        store_checkpoint("checkpoint/MiniGFM", "/{}".format(exp_id),Down_N,Down_G,Core_model)
 
-    if sum_val_acc > best_val_acc: # New best results
+    if sum_val_acc > best_val_acc: 
         print("Val improved")
         best_val_acc = sum_val_acc
         best_train_acc = sum_train_acc
         best_epoch = epoch
-        store_checkpoint("checkpoint/PCGNN", "/{}".format(exp_id),Down_N,Down_G,Core_model)
+        store_checkpoint("checkpoint/MiniGFM", "/{}".format(exp_id),Down_N,Down_G,Core_model)
         
-    if epoch - best_epoch > train_args["early_stopping"] and best_val_acc > 0.99:
-        break
-
-Down_N, Down_G, Core_model = load_best_model("checkpoint/PCGNN", "/{}".format(exp_id), Down_N, Down_G, Core_model, True)
+Down_N, Down_G, Core_model = load_best_model("checkpoint/MiniGFM", "/{}".format(exp_id), Down_N, Down_G, Core_model, True)
 with torch.no_grad():
     Core_model.eval()
     for d in range(len(Train_N)):
@@ -241,7 +221,6 @@ with torch.no_grad():
         now_graphs = all_graphs[d]
             
         train_idx = np.array([i for i in range(len(now_graphs))])
-        #train_idx = train_idx[trainM_G[d]]
             
         out = torch.zeros((len(now_graphs),numY_G[d])).to(device)
         for i in train_idx:
@@ -255,7 +234,7 @@ with torch.no_grad():
 
 #"""
 
-Core_model = load_best_model_core("checkpoint/PCGNN", "/{}".format(exp_id), Core_model, True)
+Core_model = load_best_model_core("checkpoint/MiniGFM", "/{}".format(exp_id), Core_model, True)
 Xs_N = []
 Es_N = []
 Ys_N = []
@@ -282,9 +261,6 @@ for i in range(len(Test_N)):
     
     Down_N.append(Node_linear(num_labels,hidden_size).to(device))
 
-#print(Xs_N[0].shape)
-#print(Xs_N[1].shape)
-#print(Xs_N[2].shape)
 Xs_G = []
 all_graphs = []
 Ys_G = []
@@ -311,15 +287,8 @@ for i in range(len(Test_G)):
     numY_G.append(num_labels)
     Down_G.append(Graph_linear(num_labels,hidden_size).to(device))
   
-#print(Xs_G[0][0].shape)
-#print(Xs_G[1][0].shape)
-#print(Xs_G[2][0].shape)  
-
-#all_test_parameters = [{"params":nlinear.parameters() for nlinear in Down_N}] + [{"params":glinear.parameters() for glinear in Down_G}]
-
 n_optimizers = [ torch.optim.Adam(nlinear.parameters(), lr=0.001) for nlinear in Down_N]
 g_optimizers = [ torch.optim.Adam(glinear.parameters(), lr=0.001) for glinear in Down_G]
-#optimizer = torch.optim.Adam(all_test_parameters, lr=0.001)
 
 criterion = torch.nn.CrossEntropyLoss()
 
@@ -327,7 +296,6 @@ best_N_val_acc = [0.0 for _ in range(len(Test_N))]
 best_G_val_acc = [0.0 for _ in range(len(Test_G))]
 best_N_train_acc = [0.0 for _ in range(len(Test_N))]
 best_G_train_acc = [0.0 for _ in range(len(Test_G))]
-#best_epoch = 0
 
 embedding_N = []
 embedding_G = []
@@ -344,7 +312,7 @@ for d in range(len(Test_G)):
         embedding = Core_model(Xs_G[d][i],now_graphs[i].edge_index.to(device))
         embedding_G[-1].append(embedding.detach())
         
-for epoch in range(0, 5000):
+for epoch in range(0, 10000):
     for d in range(len(Test_N)):
         n_optimizers[d].zero_grad()
         
@@ -377,12 +345,12 @@ for epoch in range(0, 5000):
         
     loss.backward()
     
-    #torch.nn.utils.clip_grad_norm_(all_test_parameters, max_norm=train_args["clip_max"])
     for d in range(len(Test_N)):
         n_optimizers[d].step()
         
     for d in range(len(Test_G)):
         g_optimizers[d].step()
+        
     sum_train_acc = 0
     sum_test_acc = 0
     sum_val_acc = 0
@@ -396,15 +364,16 @@ for epoch in range(0, 5000):
             val_acc = evaluate(out[valM_N[d]], Ys_N[d][valM_N[d]])
             test_acc = evaluate(out[testM_N[d]], Ys_N[d][testM_N[d]])
             print(f"---{Test_N[d]:<15} Train acc:{train_acc:.4f} Val acc:{val_acc:.4f} Test acc:{test_acc:.4f}")
-            if val_acc == best_N_val_acc[d] and train_acc>best_N_train_acc[d]: # New best results
+
+            if val_acc == best_N_val_acc[d] and train_acc>best_N_train_acc[d]: 
                 print("Train improved")
                 best_N_train_acc[d] = train_acc
-                store_checkpoint_down("checkpoint/PCGNN", "/{}".format(exp_id),Down_N[d],Test_N[d])
-            if val_acc > best_N_val_acc[d]: # New best results
+                store_checkpoint_down("checkpoint/MiniGFM", "/{}".format(exp_id),Down_N[d],Test_N[d])
+            if val_acc > best_N_val_acc[d]: 
                 print("Val improved")
                 best_N_val_acc[d] = val_acc
                 best_N_train_acc[d] = train_acc
-                store_checkpoint_down("checkpoint/PCGNN", "/{}".format(exp_id),Down_N[d],Test_N[d])
+                store_checkpoint_down("checkpoint/MiniGFM", "/{}".format(exp_id),Down_N[d],Test_N[d])
 
             sum_train_acc += train_acc
             sum_test_acc += test_acc
@@ -415,26 +384,25 @@ for epoch in range(0, 5000):
             now_graphs = all_graphs[d]
             
             train_idx = np.array([i for i in range(len(now_graphs))])
-            #train_idx = train_idx[trainM_G[d]]
             
             out = torch.zeros((len(now_graphs),numY_G[d])).to(device)
             for i in train_idx:
-                #embedding = Core_model(Xs_G[d][i],now_graphs[i].edge_index.to(device))
                 out[i] = Down_G[d](embedding_G[d][i])      
                 
             train_acc = evaluate(out[trainM_G[d]], Ys_G[d][trainM_G[d]])
             val_acc = evaluate(out[valM_G[d]], Ys_G[d][valM_G[d]])
             test_acc = evaluate(out[testM_G[d]], Ys_G[d][testM_G[d]])
             print(f"---{Test_G[d]:<15} Train acc:{train_acc:.4f} Val acc:{val_acc:.4f} Test acc:{test_acc:.4f}")
-            if val_acc == best_G_val_acc[d] and train_acc>best_G_train_acc[d]: # New best results
+
+            if val_acc == best_G_val_acc[d] and train_acc>best_G_train_acc[d]:
                 print("Train improved")
                 best_G_train_acc[d] = train_acc
-                store_checkpoint_down("checkpoint/PCGNN", "/{}".format(exp_id),Down_G[d],Test_G[d])
-            if val_acc > best_G_val_acc[d]: # New best results
+                store_checkpoint_down("checkpoint/MiniGFM", "/{}".format(exp_id),Down_G[d],Test_G[d])
+            if val_acc > best_G_val_acc[d]:
                 print("Val improved")
                 best_G_val_acc[d] = val_acc
                 best_G_train_acc[d] = train_acc
-                store_checkpoint_down("checkpoint/PCGNN", "/{}".format(exp_id),Down_G[d],Test_G[d])
+                store_checkpoint_down("checkpoint/MiniGFM", "/{}".format(exp_id),Down_G[d],Test_G[d])
 
             sum_train_acc += train_acc
             sum_test_acc += test_acc
@@ -442,10 +410,8 @@ for epoch in range(0, 5000):
             
     print(f"Epoch: {epoch}, train_acc: {sum_train_acc/4:.4f}, val_acc: {sum_val_acc/4:.4f}, train_loss: {loss.item():.4f}")
     
-    #if epoch - best_epoch > train_args["early_stopping"] and best_val_acc > 0.99:
-    #    break
 
-Down_N, Down_G = load_best_model_test("checkpoint/PCGNN", "/{}".format(exp_id), Down_N, Down_G,Test_N,Test_G, True)
+Down_N, Down_G = load_best_model_test("checkpoint/MiniGFM", "/{}".format(exp_id), Down_N, Down_G,Test_N,Test_G, True)
 with torch.no_grad():
     Core_model.eval()
     for d in range(len(Test_N)):
@@ -463,8 +429,7 @@ with torch.no_grad():
         now_graphs = all_graphs[d]
             
         train_idx = np.array([i for i in range(len(now_graphs))])
-        #train_idx = train_idx[trainM_G[d]]
-            
+        
         out = torch.zeros((len(now_graphs),numY_G[d])).to(device)
         for i in train_idx:
             embedding = Core_model(Xs_G[d][i],now_graphs[i].edge_index.to(device))
@@ -474,6 +439,8 @@ with torch.no_grad():
         val_acc = evaluate(out[valM_G[d]], Ys_G[d][valM_G[d]])
         test_acc = evaluate(out[testM_G[d]], Ys_G[d][testM_G[d]])
         print(f"---{Test_G[d]:<15} Train acc:{train_acc:.4f} Val acc:{val_acc:.4f} Test acc:{test_acc:.4f}")
+
+
 
 
 
