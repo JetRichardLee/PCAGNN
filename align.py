@@ -1,12 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Aug 30 09:32:08 2025
 
-@author: Lenovo
-"""
-
-from gnn import Fo_GCN, Node_linear,Graph_linear,NodeGCN,NodeGAT,NodeGSAGE
-from datasets.dataset_loader import load_node_data, load_graph_data
+from gnn import Mini_GFM, Node_linear,Graph_linear
 
 import torch 
 import numpy as np
@@ -15,7 +9,6 @@ import random
 import time 
 import copy 
 
-#device =  "cuda:7" if torch.cuda.is_available() else "cpu"
 device =  "cuda" if torch.cuda.is_available() else "cpu"
 #device =  "cpu"
 def byte_align(o_x,D):
@@ -42,20 +35,7 @@ def repeat_align(o_x,D):
     return n_x
 
 def Cal_PM(sample_x,D):
-    """
     
-    Parameters
-    ----------
-    sample_x : N*D matrix
-        sampled matrix of features.
-    D : TYPE
-        DESCRIPTION.
-
-    Returns
-    -------
-    None.
-
-    """
     XXT = torch.matmul(sample_x.T,sample_x)
     _ , U =torch.linalg.eig(XXT)
     return U[:,0:D].to(torch.float32)
@@ -63,7 +43,6 @@ def Cal_PM(sample_x,D):
 def PCA_align_N(o_x,D):
     
     x_copy = copy.deepcopy(o_x)
-    #print(x_copy.shape)
     while o_x.shape[1]<D:
         o_x = torch.concat([o_x,x_copy],dim=1)
     o_x = torch.nn.functional.normalize(o_x, p=2, dim=1)
@@ -112,5 +91,4 @@ def PCA_align_G(graphs,D,sample=None,Norm=True):
         xg = torch.nn.functional.normalize(xg, p=2, dim=1)
         n_x.append(torch.matmul(xg,PCA_U).to(device))
     return n_x
-
 
